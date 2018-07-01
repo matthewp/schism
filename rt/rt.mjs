@@ -87,6 +87,8 @@ function rt(engine) {
         return CONSTANTS.eof;
     }
 
+    var hasStarted = false;
+
     return {
         'rt-add1': function (ptr) {
             // This is a trivial function that is mostly used to test function imports.
@@ -101,6 +103,11 @@ function rt(engine) {
         },
         'peek-char': peek,
         'write-char': function (ptr) {
+            if(!hasStarted) {
+                hasStarted = true;
+                console.time("write");
+            }
+
             const byte = js_from_scheme(ptr).charCodeAt(0);
             engine.output_data.push(byte);
         },
