@@ -69,6 +69,8 @@
        (%wasm-import "rt" (error where what))
        (%wasm-import "rt" (%log-char c))
        (%wasm-import "rt" (%flush-log))
+       (%wasm-import "rt" (%time-start str))
+       (%wasm-import "rt" (%time-end str))
        ;; display, newline, etc are all just enough to compile. We'll fill them in later.
        (define (display x)
          (cond
@@ -1425,23 +1427,45 @@
 				    #x0b
 				    ,(make-vec (length element-ids)
 					       (encode-numbers element-ids))))))
-
+  ;; Run a function, logging how long it takes to run
+  (define (%timed-op name fn)
+   (begin
+    (%time-start name)
+    (let ((value (fn)))
+     (begin
+      (%time-end name)
+      value))))
   ;; Takes a library and returns a list of the corresponding Wasm module
   ;; bytes
   (define (compile-library library)
     (generate-module-from-package (compile-library->module-package library)))
   (define (compile-library->module-package library)
     ;; (parsed-lib : (exports . functions)
-    (let ((parsed-lib (parse-library (expand-macros library))))
+    (let ((parsed-lib (%timed-op "parse-library"
+                       (lambda () (parse-library (expand-macros library))))))
       (let ((exports (car parsed-lib)))
-        (let* ((closure-converted (convert-closures (cdr parsed-lib)))
-               (function-names (functions->names closure-converted))
-               (types (functions->types closure-converted))
-	       (type-ids (functions->type-ids closure-converted types))
-               (compiled-module (compile-functions
-                                 (apply-representation closure-converted))))
-          (let ((exports (build-exports exports closure-converted 0))
-                (imports (gather-imports compiled-module types)))
+        (let* ((closure-converted (%timed-op "convert-closures"
+                                   (lambda ()
+                                    (convert-closures (cdr parsed-lib)))))
+               (function-names (%timed-op "functions->names"
+                                (lambda ()
+                                 (functions->names closure-converted))))
+               (types (%timed-op "functions->types"
+                       (lambda ()
+                        (functions->types closure-converted))))
+	       (type-ids (%timed-op "functions->type-ids"
+                    (lambda ()
+                     (functions->type-ids closure-converted types))))
+               (compiled-module (%timed-op "compile-functions"
+                                 (lambda ()
+                                  (compile-functions
+                                    (apply-representation closure-converted))))))
+          (let ((exports (%timed-op "build-exports"
+                          (lambda ()
+                           (build-exports exports closure-converted 0))))
+                (imports (%timed-op "gather-imports"
+                          (lambda ()
+                           (gather-imports compiled-module types)))))
             `(,types ,exports ,imports ,compiled-module ,function-names ,type-ids))))))
   (define (generate-module-from-package package)
     (let ((types (car package))
@@ -1471,7 +1495,9 @@
      (else (let ((_ (write-bytes (car ls))))
              (write-bytes (cdr ls))))))
   (define (compile-stdin->module-package)
-    (compile-library->module-package (read)))
+   (%timed-op "compile-library->module-package"
+    (lambda ()
+      (compile-library->module-package (read)))))
   (define (compile-module-package->stdout package)
     (write-bytes (generate-module-from-package package)))
   (define (compile-stdin->stdout)

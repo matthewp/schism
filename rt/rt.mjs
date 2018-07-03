@@ -126,6 +126,12 @@ function rt(engine) {
         '%flush-log': () => {
             console.info(engine.log);
             engine.log = "";
+        },
+        '%time-start': str => {
+            console.time(engine.schemeToString(str));
+        },
+        '%time-end': str => {
+            console.timeEnd(engine.schemeToString(str));
         }
     }
 }
