@@ -376,17 +376,19 @@
        (define (procedure? p)
          (eq? (%get-tag p) ,(closure-tag)))
        (define (map p ls)
-	 (if (null? ls)
-	     '()
-	     (cons (p (car ls)) (map p (cdr ls)))))
+        (if (null? ls)
+	        '()
+	        (cons (p (car ls)) (map p (cdr ls)))))
        (define (fold-left p init ls)
-	 (if (null? ls)
-	     init
-	     (fold-left p (p init (car ls)) (cdr ls))))
+	      (if (null? ls)
+	        init
+	        (fold-left p (p init (car ls)) (cdr ls))))
        (define (fold-right p init ls)
-	 (if (null? ls)
-	     init
-	     (p (car ls) (fold-right p init (cdr ls))))))))
+	      (if (null? ls)
+	        init
+	        (p (car ls) (fold-right p init (cdr ls)))))
+       (define (bytevector? bv)
+        #t)))
 
   ;; TODO: move this into the library
   (define (memq x ls)
