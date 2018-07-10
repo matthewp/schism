@@ -37,6 +37,7 @@
   (define (string-tag) 4)
   (define (symbol-tag) 5)
   (define (closure-tag) 6)
+  (define (bytevector-tag 7))
 
   (define (allocation-pointer) 0)
   (define (word-size) 4)
@@ -387,8 +388,12 @@
 	      (if (null? ls)
 	        init
 	        (p (car ls) (fold-right p init (cdr ls)))))
-       (define (bytevector? bv)
-        #t)))
+       (define (make-bytevector k)
+        (%alloc ,(bytevector-tag) k))
+       (define (bytevector? p)
+        (eq? (%get-tag p) ,(bytevector-tag)))
+       (define (bytevector-s8-set! bv k byte)
+        #t))))
 
   ;; TODO: move this into the library
   (define (memq x ls)
