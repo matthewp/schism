@@ -71,6 +71,9 @@
        (%wasm-import "rt" (%flush-log))
        (%wasm-import "rt" (%time-start str))
        (%wasm-import "rt" (%time-end str))
+       (%wasm-import "rt" (%start-time))
+       (%wasm-import "rt" (%end-time))
+
        ;; display, newline, etc are all just enough to compile. We'll fill them in later.
        (define (display x)
          (cond
@@ -225,7 +228,9 @@
                      (%find-symbol-by-name s (cdr table)))
                  (error '%find-symbol-by-name "corrupt symbol table"))))
        (define (string->symbol s)
-         (if (string? s)
+        (begin
+         (%start-time)
+         (let ((result (if (string? s)
              (or (%find-symbol-by-name s (%symbol-table))
                  (let ((x (cons s (%symbol-table))))
                    (begin
@@ -233,7 +238,11 @@
                      (%set-tag x ,(symbol-tag)))))
              ;; calling error here can lead to an infinite loop, so we
              ;; generate an unreachable instead.
-             (%unreachable)))
+             (%unreachable))))
+
+          (begin
+           (%end-time)
+           result))))
        (define (gensym t) ;; Creates a brand new symbol that cannot be reused
          (let ((x (cons '() (%symbol-table))))
            (begin (set-cdr! (%base-pair) x)

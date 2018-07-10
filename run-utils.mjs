@@ -52,6 +52,7 @@ function make_compiler(compiler_bytes) {
     const schism = await engine.loadWasmModule(await compiler_bytes());
     engine.setCurrentInputPort(bytes);
     let module_package = schism.exports['compile-stdin->module-package']();
+    console.log(`[string->symbol] total: ${engine.totalTime}ms`);
     module_package = engine.collect(module_package);
     schism.exports['compile-module-package->stdout'](module_package);
     return new Uint8Array(engine.output_data);

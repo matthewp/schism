@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { performance } from 'perf_hooks';
+
 const TAG_SIZE = 3;
 const TAGS = {
     fixnum: 0,
@@ -100,6 +102,9 @@ function rt(engine) {
         return CONSTANTS.eof;
     }
 
+    engine.totalTime = 0;
+    let currentTime;
+
     return {
         'rt-add1': function (ptr) {
             // This is a trivial function that is mostly used to test function imports.
@@ -126,6 +131,15 @@ function rt(engine) {
         '%flush-log': () => {
             console.info(engine.log);
             engine.log = "";
+        },
+        '%start-time': () => {
+          currentTime = performance.now();
+        },
+        '%end-time': () => {
+          let now = performance.now();
+          let ms = now - currentTime;
+          //console.log("LAST", ms);
+          engine.totalTime += ms;
         },
         '%time-start': str => {
             console.time(engine.schemeToString(str));
